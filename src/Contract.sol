@@ -37,6 +37,7 @@ contract Contract is ERC721URIStorage,ReentrancyGuard {
         require(nft.ownerOf(tokenId) == msg.sender);
         require(nft.getApproved(tokenId) == address(this) , "marketplace is not approved to list this");
         usersNFT[NFTContractAddress][tokenId] = NFT(msg.sender,NFTContractAddress,tokenId,price,true);
+        allNFTs.push(NFT(msg.sender,NFTContractAddress,tokenId,price,true));
     }
 
     function buyNFT(address NFTContract , uint tokenId ) external payable nonReentrant {
@@ -51,7 +52,6 @@ contract Contract is ERC721URIStorage,ReentrancyGuard {
 
         IERC71(NFTContract).safeTransferFrom(userNFT.seller , msg.sender , tokenId);
         userNFT.isActive = false;
-
         if(msg.value > userNFT.price){
             uint refundableAmount = msg.value - userNFT.price;
             payable(msg.sender).transfer(refundableAmount);
@@ -82,11 +82,28 @@ contract Contract is ERC721URIStorage,ReentrancyGuard {
 
     }
     //fetch nft bought by me
-    function nftOwnedByAddress( address seller ) {
-        NFT storage ownedNFT = usersNFT[][] //filtering the users
+    function nftOwnedByAddress( address seller )external returns(NFT[] memory) {
+        uint count = 0 ;  //filtering the users
+        for (uint256 i = ; i < allNFTs.length; i++){
+            if(allNFTs[i].seller == seller){
+                count++;
+            }
+        } 
+            
+        NFT[] memory result =  new NFT[](count);
+        uint index = 0;
+        for (uint256 i = 0; i < allNFTs.length; i++) {
+            if(allNFTs[i].seller == seller){
+                result[index] = allNFTs[i];
+                index++;
+            }
+        }
+        return result;
     }
+
     //fetch unsold nft
     function unsoldNFT(){
+        
     }
 
     function setMarketFee(uint newFee) external onlyOwner {
